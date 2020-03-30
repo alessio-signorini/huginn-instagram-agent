@@ -22,7 +22,7 @@ module Agents
 
     def validate_options
       errors.add(:base, "`accounts_to_monitor` must be an array of strings") unless options['accounts_to_monitor'].is_a?(Array)
-      options['accounts_to_monitor'].each{|v| v.sub!(/\W+/,'')}
+      options['accounts_to_monitor'].each{|v| v.sub!(/^@+/,'')}
     end
 
 
