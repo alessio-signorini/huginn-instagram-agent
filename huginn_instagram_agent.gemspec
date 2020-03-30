@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "huginn_instagram_agent"
-  spec.version       = '0.1'
+  spec.version       = '0.2'
   spec.authors       = ["Alessio Signorini"]
   spec.email         = ["alessio@signorini.us"]
 

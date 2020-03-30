@@ -94,6 +94,9 @@ module Agents
       json['entry_data']['ProfilePage'][0]['graphql']['user']['edge_owner_to_timeline_media']['edges'].map do |edge|
         edge['node']
       end
+
+    rescue => e
+      return nil
     end
 
 
