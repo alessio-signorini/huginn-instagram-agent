@@ -96,7 +96,7 @@ module Agents
       end
 
     rescue => e
-      return nil
+      return []
     end
 
 
