@@ -63,7 +63,7 @@ module Agents
       json = extract_json(response.parsed_response)
 
       unless json
-        error("[#{account}] Could not extract JSON from #{url}")
+        error("[#{account}] Could not extract JSON from #{url} - raw #{response.parsed_response}")
         memory['error'] = true
         return nil
       end
@@ -71,7 +71,7 @@ module Agents
       posts = extract_posts(json)
 
       unless posts.any?
-        error("[#{account}] Could not find any posts, strange")
+        error("[#{account}] Could not find any posts, strange - raw #{json}")
         memory['error'] = true
         return nil
       end
