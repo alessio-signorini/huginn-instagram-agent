@@ -34,7 +34,9 @@ module Agents
     def check
       memory['error'] = nil
 
-      interpolated['accounts_to_monitor'].map do |account|
+      accounts_to_refresh.each do |account|
+        remember_fetching(account)
+
         posts = get_posts(account) or next
 
         posts.each do |post|
@@ -59,7 +61,7 @@ module Agents
       )
 
       unless response.success?
-        error("[#{account}] Could not fetch #{url} - error #{response.code}")
+        error("[#{account}] Could not fetch #{url} - error #{response.code} | headers #{response.headers}")
         memory['error'] = true
         return nil
       end
@@ -67,7 +69,7 @@ module Agents
       json = extract_json(response.parsed_response)
 
       unless json
-        error("[#{account}] Could not extract JSON from #{url} - raw #{response.parsed_response}")
+        error("[#{account}] Could not extract JSON from #{url} - raw #{response.parsed_response} | headers #{response.headers}")
         memory['error'] = true
         return nil
       end
@@ -75,7 +77,7 @@ module Agents
       posts = extract_posts(json)
 
       unless posts.any?
-        error("[#{account}] Could not find any posts, strange - raw #{json}")
+        error("[#{account}] Could not find any posts, strange - raw #{response.parsed_response} | headers #{response.headers} | json #{json}")
         memory['error'] = true
         return nil
       end
@@ -122,6 +124,25 @@ module Agents
       event = events.find(event_id)
       event.payload = post
       create_event(event)
+    end
+
+
+    def stale_accounts(refresh_every=24.hours)
+      interpolated['accounts_to_monitor'].select do |account|
+        last_fetched_at = memory.dig('last_fetched_at', account)
+        last_fetched_at.nil? || last_fetched_at < refresh_every.ago.to_i
+      end
+    end
+
+
+    def accounts_to_refresh
+      Array(stale_accounts.sample)
+    end
+
+
+    def remember_fetching(account)
+      memory['last_fetched_at'] ||= {}
+      memory['last_fetched_at'][account] = Time.now.to_i
     end
 
   end
