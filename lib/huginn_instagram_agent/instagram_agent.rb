@@ -1,6 +1,5 @@
 module Agents
   class InstagramAgent < Agent
-
     can_dry_run!
 
     default_schedule 'every_1h'
@@ -8,19 +7,27 @@ module Agents
     description <<-MD
       Monitor public Instagram accounts and creates an event for each post.
 
+      It can be scheduled to hit Instagram as much as you want but will obey
+        the `wait_between_refresh` for each account to avoid being banned.
+        If set to `0` it will refresh all accounts at every run.
+
       Links generally expire after 24 hours but this agent will try to keep the
-        corresponding events updated.
+        corresponding events updated so they can be used in a feed.
     MD
 
 
     def default_options
       {
+        :wait_between_refresh => 86400,
         :accounts_to_monitor => []
       }
     end
 
 
     def validate_options
+      options['wait_between_refresh'] ||= 86400
+      errors.add(:base, "`wait_between_refresh` must be an integer >=0") unless (options['wait_between_refresh'].to_i >= 0)
+
       errors.add(:base, "`accounts_to_monitor` must be an array of strings") unless options['accounts_to_monitor'].is_a?(Array)
       options['accounts_to_monitor'].each{|v| v.sub!(/^@+/,'')}
     end
@@ -52,7 +59,7 @@ module Agents
 
 
     def get_posts(account)
-      url = "https://www.instagram.com/#{account}/"
+      url = "https://www.instagram.com/#{account}/feed"
 
       response = HTTParty.get(url,
         :headers => {
@@ -127,16 +134,23 @@ module Agents
     end
 
 
-    def stale_accounts(refresh_every=24.hours)
-      interpolated['accounts_to_monitor'].select do |account|
+    def all_accounts
+      interpolated['accounts_to_monitor']
+    end
+
+
+    def stale_accounts(refresh_every)
+      all_accounts.select do |account|
         last_fetched_at = memory.dig('last_fetched_at', account)
-        last_fetched_at.nil? || last_fetched_at < refresh_every.ago.to_i
+        last_fetched_at.nil? || last_fetched_at < refresh_every.seconds.ago.to_i
       end
     end
 
 
     def accounts_to_refresh
-      Array(stale_accounts.sample)
+      refresh_every = interpolated['wait_between_refresh'].to_i
+
+      return Array(refresh_every ? stale_accounts(refresh_every).sample : all_accounts)
     end
 
 
