@@ -59,7 +59,7 @@ module Agents
 
 
     def get_posts(account)
-      url = "https://www.instagram.com/#{account}/feed"
+      url = "https://www.instagram.com/#{account}/?__a=1&__d=di"
 
       response = HTTParty.get(url,
         :headers => {
@@ -73,7 +73,7 @@ module Agents
         return nil
       end
 
-      json = extract_json(response.parsed_response)
+      json = response.parsed_response
 
       unless json
         error("[#{account}] Could not extract JSON from #{url} - raw #{response.parsed_response} | headers #{response.headers}")
@@ -92,19 +92,8 @@ module Agents
       return Array(posts).compact
     end
 
-
-    def extract_json(html)
-      if data = html.match(/window._sharedData\s*=\s*(\{.+?})\s*\;\s*<\/script>/m)[1]
-        return JSON.parse(data)
-      end
-
-      rescue JSON::ParserError
-        return nil
-    end
-
-
     def extract_posts(json)
-      json['entry_data']['ProfilePage'][0]['graphql']['user']['edge_owner_to_timeline_media']['edges'].map do |edge|
+      json['graphql']['user']['edge_owner_to_timeline_media']['edges'].map do |edge|
         edge['node']
       end
 
