@@ -10,6 +10,8 @@ module Agents
       It can be scheduled to hit Instagram as much as you want but will obey
         the `wait_between_refresh` for each account to avoid being banned.
         If set to `0` it will refresh all accounts at every run.
+      
+      You can set the option `proxy` to use one. The format is `user:password@host:port`.
 
       Links generally expire after 24 hours but this agent will try to keep the
         corresponding events updated so they can be used in a feed.
@@ -30,6 +32,20 @@ module Agents
 
       errors.add(:base, "`accounts_to_monitor` must be an array of strings") unless options['accounts_to_monitor'].is_a?(Array)
       options['accounts_to_monitor'].each{|v| v.sub!(/^@+/,'')}
+    end
+
+
+    def proxy
+      return {} if options['proxy'].nil?
+
+      user, password, host, port = options['proxy'].split(/[:@]/)
+
+      return {
+        :http_proxyaddr => host,
+        :http_proxyport => port,
+        :http_proxyuser => user,
+        :http_proxypass => password
+      }
     end
 
 
@@ -61,10 +77,10 @@ module Agents
     def get_posts(account)
       url = "https://www.instagram.com/#{account}/?__a=1&__d=di"
 
-      response = HTTParty.get(url,
+      response = HTTParty.get(url, {
         :headers => {
           'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
-        }
+        }}.merge(proxy)
       )
 
       unless response.success?
